@@ -3,7 +3,14 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { normalizeGoalTags } from '@/lib/profile/normalizeGoalTags';
 
 export async function POST(request: Request) {
-  const { rawInput } = await request.json();
+  let rawInput: any;
+  try {
+    const body = await request.json();
+    rawInput = body.rawInput;
+  } catch (error) {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
   if (typeof rawInput !== 'string') {
     return NextResponse.json({ error: 'rawInput must be a string' }, { status: 400 });
   }
