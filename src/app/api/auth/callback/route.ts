@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   try {
     const stackTags = providerToken ? await fetchGitHubStackTags(providerToken) : [];
-    await supabase.from('profiles').upsert(
+    const { error: upsertError } = await supabase.from('profiles').upsert(
       {
         id: user.id,
         email: user.email ?? '',
@@ -31,11 +31,21 @@ export async function GET(request: Request) {
       },
       { onConflict: 'id' }
     );
+
+    if (upsertError) {
+      console.error('Failed to upsert profile:', upsertError);
+      return NextResponse.redirect(new URL('/dashboard?error=profile_save_failed', request.url));
+    }
   } catch (fetchError) {
     console.error('Failed to derive stack tags from GitHub:', fetchError);
-    await supabase
+    const { error: fallbackUpsertError } = await supabase
       .from('profiles')
       .upsert({ id: user.id, email: user.email ?? '' }, { onConflict: 'id', ignoreDuplicates: true });
+
+    if (fallbackUpsertError) {
+      console.error('Failed to upsert profile (fallback):', fallbackUpsertError);
+      return NextResponse.redirect(new URL('/dashboard?error=profile_save_failed', request.url));
+    }
   }
 
   return NextResponse.redirect(new URL('/dashboard', request.url));
