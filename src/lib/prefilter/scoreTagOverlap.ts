@@ -10,12 +10,12 @@ export function scoreTagOverlap(item: TrendItem, stackTags: StackTag[], goalTags
   const itemTags = new Set(item.tags.map((tag) => tag.toLowerCase()));
 
   const maintainScore = stackTags.reduce(
-    (total, stackTag) => (itemTags.has(stackTag.tag) ? total + stackTag.weight : total),
+    (total, stackTag) => (itemTags.has(stackTag.tag.toLowerCase()) ? total + stackTag.weight : total),
     0
   );
 
   const growScore = goalTags.reduce(
-    (total, goalTag) => (itemTags.has(goalTag.tag) ? total + 1 : total),
+    (total, goalTag) => (itemTags.has(goalTag.tag.toLowerCase()) ? total + 1 : total),
     0
   );
 

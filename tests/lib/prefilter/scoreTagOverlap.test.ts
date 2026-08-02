@@ -27,4 +27,15 @@ describe('scoreTagOverlap', () => {
     const result = scoreTagOverlap(item, [{ tag: 'rust', weight: 1 }], [{ tag: 'kubernetes' }]);
     expect(result).toEqual({ maintainScore: 0, growScore: 0 });
   });
+
+  it('matches tags case-insensitively for stack and goal tags', () => {
+    const result = scoreTagOverlap(
+      item,
+      [{ tag: 'React', weight: 0.9 }, { tag: 'SERVER', weight: 0.5 }],
+      [{ tag: 'Components' }, { tag: 'HACKER' }]
+    );
+
+    expect(result.maintainScore).toBeCloseTo(1.4);
+    expect(result.growScore).toBe(1);
+  });
 });
