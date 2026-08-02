@@ -63,4 +63,36 @@ describe('prefilterItems', () => {
     const candidates = await prefilterItems(manyItems, profile, 'fake-key');
     expect(candidates.length).toBeLessThanOrEqual(20);
   });
+
+  it('does not let an empty goalTags profile produce a false grow signal', async () => {
+    const { embedTexts } = await import('@/lib/prefilter/embeddingSimilarity');
+    vi.mocked(embedTexts).mockResolvedValueOnce([
+      [1, 0], // stack embedding
+      [0, 1], // goal embedding (would-be signal — must never be used since goalTags is empty)
+      [0, 1], // item embedding — deliberately equal to the goal embedding, not the stack embedding
+    ]);
+
+    const noGoalsProfile: Profile = {
+      id: 'user-2',
+      stackTags: [{ tag: 'python', weight: 0.4 }],
+      goalTags: [],
+    };
+
+    const item: TrendItem = {
+      source: 'hacker-news',
+      title: 'Python 3.13 release notes',
+      url: 'https://c.com',
+      tags: ['python'],
+      rawSignal: 80,
+      fetchedAt: 'now',
+    };
+
+    // If the empty-goalTags guard were removed, growSimilarity would be computed
+    // against the goal embedding (which the item embedding intentionally matches),
+    // producing a growTotal that beats maintainTotal and misclassifying this as 'grow'.
+    const candidates = await prefilterItems([item], noGoalsProfile, 'fake-key');
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].category).toBe('maintain');
+  });
 });
