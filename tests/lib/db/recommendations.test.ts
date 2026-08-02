@@ -17,7 +17,8 @@ const recommendation: EnrichedRecommendation = {
 };
 
 function makeSupabaseStub(existingRow: { id: string } | null) {
-  const update = vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+  const updateEq = vi.fn().mockResolvedValue({ error: null });
+  const update = vi.fn().mockReturnValue({ eq: updateEq });
   const insert = vi.fn().mockResolvedValue({ error: null });
   const maybeSingle = vi.fn().mockResolvedValue({ data: existingRow, error: null });
 
@@ -30,7 +31,7 @@ function makeSupabaseStub(existingRow: { id: string } | null) {
   });
 
   const from = vi.fn().mockReturnValue({ select, update, insert });
-  return { from, update, insert, select };
+  return { from, update, updateEq, insert, select };
 }
 
 describe('upsertRecommendation', () => {
@@ -52,5 +53,6 @@ describe('upsertRecommendation', () => {
     expect(supabase.update).toHaveBeenCalledWith(
       expect.not.objectContaining({ status: expect.anything() })
     );
+    expect(supabase.updateEq).toHaveBeenCalledWith('id', 'existing-id');
   });
 });
