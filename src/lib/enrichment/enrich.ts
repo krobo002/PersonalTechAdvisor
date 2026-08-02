@@ -71,7 +71,8 @@ export async function enrichCandidate(
       }
 
       return { ...candidate, ...parsed };
-    } catch {
+    } catch (error) {
+      console.error(`Enrichment failed for "${candidate.title}" (${candidate.source}), attempt ${attempt + 1}:`, error);
       if (attempt === 1) {
         return { ...candidate, ...fallbackEnrichment(candidate) };
       }
