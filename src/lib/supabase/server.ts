@@ -13,10 +13,18 @@ export function createServerSupabaseClient() {
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: Record<string, unknown>) {
-          cookieStore.set(name, value, options);
+          try {
+            cookieStore.set(name, value, options);
+          } catch {
+            // Called from a Server Component; middleware handles session refresh instead.
+          }
         },
         remove(name: string, options: Record<string, unknown>) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 });
+          try {
+            cookieStore.set(name, '', { ...options, maxAge: 0 });
+          } catch {
+            // Called from a Server Component; middleware handles session refresh instead.
+          }
         },
       },
     }
