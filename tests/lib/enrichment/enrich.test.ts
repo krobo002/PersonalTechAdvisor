@@ -46,6 +46,13 @@ describe('enrichCandidate', () => {
     expect(result.learningAction).toBe('Skim the release notes');
     expect(result.learningTimeEstimate).toBe('20 minutes');
     expect(result.source).toBe('hacker-news');
+
+    // Pin the request parameters so a future regression (e.g. reverting
+    // max_tokens or re-enabling thinking) fails loudly instead of passing
+    // silently — these tests only assert on the mocked response otherwise.
+    expect(client.messages.create).toHaveBeenCalledWith(
+      expect.objectContaining({ max_tokens: 2000, thinking: { type: 'disabled' } })
+    );
   });
 
   it('retries once, then falls back to a template on repeated failure', async () => {
