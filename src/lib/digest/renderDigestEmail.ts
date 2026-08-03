@@ -1,5 +1,18 @@
 import type { DigestContent } from './buildDigest';
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeUrl(url: string): string {
+  return /^https?:\/\//i.test(url) ? url : '#';
+}
+
 export function renderDigestEmail(content: DigestContent): { subject: string; html: string } {
   if (content.isEmpty) {
     return {
@@ -11,9 +24,9 @@ export function renderDigestEmail(content: DigestContent): { subject: string; ht
   const items = content.recommendations
     .map(
       (rec) => `<li>
-        <strong>[${rec.category}] <a href="${rec.url}">${rec.title}</a></strong><br/>
-        ${rec.blurb}<br/>
-        <em>${rec.learningAction} (${rec.learningTimeEstimate})</em>
+        <strong>[${escapeHtml(rec.category)}] <a href="${safeUrl(rec.url)}">${escapeHtml(rec.title)}</a></strong><br/>
+        ${escapeHtml(rec.blurb)}<br/>
+        <em>${escapeHtml(rec.learningAction)} (${escapeHtml(rec.learningTimeEstimate)})</em>
       </li>`
     )
     .join('');
