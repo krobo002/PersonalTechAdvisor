@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type Anthropic from '@anthropic-ai/sdk';
+import type { OllamaChatClient } from '../enrichment/ollamaClient';
 import type { IngestionResult } from '../sources';
 import { prefilterItems } from '../prefilter/prefilter';
 import { enrichCandidate } from '../enrichment/enrich';
@@ -18,7 +18,7 @@ export interface PipelineResult {
 export async function runPipeline(
   supabase: SupabaseClient,
   profile: Profile,
-  claudeClient: Pick<Anthropic, 'messages'>,
+  ollamaClient: OllamaChatClient,
   voyageApiKey: string,
   ingestionResult: IngestionResult
 ): Promise<PipelineResult> {
@@ -31,7 +31,7 @@ export async function runPipeline(
   const { candidates, embeddingsAvailable } = await prefilterItems(items, profile, voyageApiKey);
 
   for (const candidate of candidates) {
-    const enriched = await enrichCandidate(candidate, profile, claudeClient);
+    const enriched = await enrichCandidate(candidate, profile, ollamaClient);
     await upsertRecommendation(supabase, profile.id, enriched);
   }
 

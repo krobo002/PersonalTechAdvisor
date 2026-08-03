@@ -1,4 +1,4 @@
-import type Anthropic from '@anthropic-ai/sdk';
+import type { OllamaChatClient } from './ollamaClient';
 import type { Candidate } from '../prefilter/types';
 import type { Profile } from '../profile/types';
 import type { EnrichedRecommendation } from './types';
@@ -48,27 +48,17 @@ Respond with ONLY a JSON object with exactly these keys:
 export async function enrichCandidate(
   candidate: Candidate,
   profile: Profile,
-  client: Pick<Anthropic, 'messages'>
+  client: OllamaChatClient
 ): Promise<EnrichedRecommendation> {
   const prompt = buildPrompt(candidate, profile);
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const response = await client.messages.create({
-        model: 'claude-sonnet-5',
-        max_tokens: 2000,
-        thinking: { type: 'disabled' },
-        messages: [{ role: 'user', content: prompt }],
-      } as Parameters<Anthropic['messages']['create']>[0] & { thinking?: { type: 'disabled' } });
+      const content = await client.generate(prompt);
 
-      const textBlock = (response as any).content.find((block: any) => block.type === 'text');
-      if (!textBlock) {
-        throw new Error('No text block in Claude response');
-      }
-
-      const parsed = JSON.parse(textBlock.text);
+      const parsed = JSON.parse(content);
       if (!isValidPayload(parsed)) {
-        throw new Error('Claude response did not match expected shape');
+        throw new Error('Ollama response did not match expected shape');
       }
 
       return { ...candidate, ...parsed };

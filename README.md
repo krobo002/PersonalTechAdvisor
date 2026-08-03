@@ -2,8 +2,9 @@
 
 Watches trending dev-community signals (Hacker News, Reddit, GitHub, Stack
 Overflow), filters them against your GitHub-derived stack and self-declared
-growth goals, enriches the top matches via Claude into tailored learning
-recommendations, and delivers them via a dashboard and a weekly email digest.
+growth goals, enriches the top matches via a local Ollama model into
+tailored learning recommendations, and delivers them via a dashboard and a
+weekly email digest.
 
 See [`docs/superpowers/specs/2026-08-02-tech-relevance-advisor-design.md`](docs/superpowers/specs/2026-08-02-tech-relevance-advisor-design.md)
 for the design and [`docs/superpowers/plans/2026-08-02-tech-relevance-advisor.md`](docs/superpowers/plans/2026-08-02-tech-relevance-advisor.md)
@@ -15,7 +16,9 @@ for the implementation plan.
 - A [Supabase](https://supabase.com) project (Postgres + Auth)
 - A [GitHub OAuth App](https://github.com/settings/developers) (for sign-in and
   reading your repos/languages)
-- An [Anthropic API key](https://console.anthropic.com) (enrichment)
+- [Ollama](https://ollama.com) installed and running locally
+  (`ollama serve`), with a chat model pulled, e.g. `ollama pull llama3.1`
+  (enrichment — no cloud subscription needed)
 - A [Voyage AI API key](https://www.voyageai.com) (embedding similarity)
 - A [Resend](https://resend.com) account with a verified sending domain
   (digest email)
@@ -64,13 +67,23 @@ for the implementation plan.
    | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project settings → API |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project settings → API |
    | `SUPABASE_SERVICE_ROLE_KEY` | Supabase project settings → API (keep secret — used only by the cron routes) |
-   | `ANTHROPIC_API_KEY` | Anthropic Console |
+   | `OLLAMA_BASE_URL` | Defaults to `http://localhost:11434` — where your local `ollama serve` listens |
+   | `OLLAMA_CHAT_MODEL` | Any model you've pulled locally, e.g. `llama3.1` (`ollama pull llama3.1`) |
    | `VOYAGE_API_KEY` | Voyage AI dashboard |
    | `RESEND_API_KEY` | Resend dashboard |
    | `DIGEST_FROM_EMAIL` | A sender address on a domain verified in Resend, e.g. `Tech Relevance Advisor <digest@yourdomain.com>` |
    | `CRON_SECRET` | Any random string you generate yourself — protects the cron routes from unauthenticated calls |
 
 ## Running locally
+
+Start Ollama first (in a separate terminal, if it isn't already running as a
+background service):
+
+```bash
+ollama serve
+```
+
+Then:
 
 ```bash
 npm run dev
@@ -114,3 +127,11 @@ a 401 and only manual/`curl`-triggered runs will work.
 Set all the environment variables above in your Vercel project settings, then
 deploy. Remember to also point your GitHub OAuth App's callback URL at the
 deployed domain.
+
+**Note:** enrichment calls a local Ollama server (`OLLAMA_BASE_URL`), which
+won't be reachable from Vercel's servers by default. Deploying without
+further changes means the pipeline will run but every recommendation will
+fall back to the generic template blurb. To use real enrichment from a
+Vercel deployment, you'd need to expose your local Ollama instance (e.g. via
+a tunnel) or run Ollama on a server Vercel can reach, and point
+`OLLAMA_BASE_URL` at it.

@@ -15,13 +15,13 @@ vi.mock('@/lib/db/recommendations', () => ({
 
 const profile: Profile = { id: 'user-1', stackTags: [], goalTags: [] };
 const fakeSupabase = {} as any;
-const fakeClaudeClient = {} as any;
+const fakeOllamaClient = {} as any;
 
 describe('runPipeline', () => {
   it('short-circuits with zero processed when ingestion returns no items', async () => {
     const ingestionResult: IngestionResult = { items: [], failedSources: ['reddit'] };
 
-    const result = await runPipeline(fakeSupabase, profile, fakeClaudeClient, 'voyage-key', ingestionResult);
+    const result = await runPipeline(fakeSupabase, profile, fakeOllamaClient, 'voyage-key', ingestionResult);
 
     expect(result).toEqual({ processedCount: 0, failedSources: ['reddit'], embeddingsAvailable: true });
   });
@@ -47,7 +47,7 @@ describe('runPipeline', () => {
     vi.mocked(enrichCandidate).mockResolvedValue(enriched);
     vi.mocked(upsertRecommendation).mockResolvedValue(undefined);
 
-    const result = await runPipeline(fakeSupabase, profile, fakeClaudeClient, 'voyage-key', ingestionResult);
+    const result = await runPipeline(fakeSupabase, profile, fakeOllamaClient, 'voyage-key', ingestionResult);
 
     expect(upsertRecommendation).toHaveBeenCalledWith(fakeSupabase, 'user-1', enriched);
     expect(result).toEqual({ processedCount: 1, failedSources: [], embeddingsAvailable: true });
@@ -74,7 +74,7 @@ describe('runPipeline', () => {
     vi.mocked(enrichCandidate).mockResolvedValue(enriched);
     vi.mocked(upsertRecommendation).mockResolvedValue(undefined);
 
-    const result = await runPipeline(fakeSupabase, profile, fakeClaudeClient, 'voyage-key', ingestionResult);
+    const result = await runPipeline(fakeSupabase, profile, fakeOllamaClient, 'voyage-key', ingestionResult);
 
     expect(result).toEqual({ processedCount: 1, failedSources: [], embeddingsAvailable: false });
   });
