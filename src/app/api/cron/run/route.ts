@@ -22,8 +22,16 @@ export async function GET(request: Request) {
   const results = [];
   for (const row of profileRows ?? []) {
     const profile = { id: row.id, stackTags: row.stack_tags, goalTags: row.goal_tags };
-    const result = await runPipeline(supabase, profile, claudeClient, voyageApiKey);
-    results.push({ profileId: profile.id, ...result });
+    try {
+      const result = await runPipeline(supabase, profile, claudeClient, voyageApiKey);
+      results.push({ profileId: profile.id, ...result });
+    } catch (error) {
+      console.error(`runPipeline failed for profile ${profile.id}:`, error);
+      results.push({
+        profileId: profile.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   return NextResponse.json({ results });
