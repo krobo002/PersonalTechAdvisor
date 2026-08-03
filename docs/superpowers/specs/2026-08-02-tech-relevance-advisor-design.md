@@ -81,7 +81,10 @@ configurable):
   given the "shippable later" constraint.
 - **Scheduler**: Vercel Cron (or equivalent) triggering stages 1–4, then the digest
   job.
-- **Enrichment**: Claude API.
+- **Enrichment**: Local Ollama model (chat), reachable at `OLLAMA_BASE_URL` — no
+  cloud LLM subscription required. (Originally Claude API; switched to avoid
+  requiring a paid Anthropic subscription — see the implementation plan's
+  enrichment task for the client interface.)
 - **Email**: Resend (or equivalent transactional email API) for the digest.
 
 Rationale: cheap to run for a single user today, and Supabase's built-in multi-tenant
