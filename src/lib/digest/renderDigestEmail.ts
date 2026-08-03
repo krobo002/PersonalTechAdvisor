@@ -24,7 +24,7 @@ export function renderDigestEmail(content: DigestContent): { subject: string; ht
   const items = content.recommendations
     .map(
       (rec) => `<li>
-        <strong>[${escapeHtml(rec.category)}] <a href="${safeUrl(rec.url)}">${escapeHtml(rec.title)}</a></strong><br/>
+        <strong>[${escapeHtml(rec.category)}] <a href="${escapeHtml(safeUrl(rec.url))}">${escapeHtml(rec.title)}</a></strong><br/>
         ${escapeHtml(rec.blurb)}<br/>
         <em>${escapeHtml(rec.learningAction)} (${escapeHtml(rec.learningTimeEstimate)})</em>
       </li>`

@@ -54,4 +54,28 @@ describe('renderDigestEmail', () => {
     expect(html).toContain('&amp;');
     expect(html).toContain('&lt;learn&gt;');
   });
+
+  it('escapes quote characters in an otherwise-valid href so the attribute cannot be broken out of', () => {
+    const { html } = renderDigestEmail({
+      isEmpty: false,
+      recommendations: [
+        {
+          id: '3',
+          title: 'Sneaky link',
+          url: 'https://x.com/"><b>pwn</b>',
+          category: 'grow',
+          blurb: 'blurb',
+          learningAction: 'Read docs',
+          learningTimeEstimate: '5 minutes',
+        },
+      ],
+    });
+
+    // The URL passes the scheme check but contains a raw quote; it must be
+    // HTML-escaped before being placed in the href attribute.
+    expect(html).not.toMatch(/href="https:\/\/x\.com\/"><b>/);
+    expect(html).not.toContain('<b>pwn</b>');
+    expect(html).toContain('&quot;');
+    expect(html).toContain('href="https://x.com/&quot;&gt;&lt;b&gt;pwn&lt;/b&gt;"');
+  });
 });
