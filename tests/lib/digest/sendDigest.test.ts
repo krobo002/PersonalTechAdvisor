@@ -1,5 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { sendDigest } from '@/lib/digest/sendDigest';
+
+beforeAll(() => {
+  process.env.DIGEST_FROM_EMAIL = 'Tech Relevance Advisor <digest@test.example.com>';
+});
 
 vi.mock('@/lib/digest/buildDigest', () => ({
   buildDigest: vi.fn().mockResolvedValue({
@@ -12,7 +16,7 @@ describe('sendDigest', () => {
   it('sends the email and logs the digest on success', async () => {
     const insert = vi.fn().mockResolvedValue({ error: null });
     const supabase = { from: vi.fn().mockReturnValue({ insert }) } as any;
-    const resend = { emails: { send: vi.fn().mockResolvedValue({}) } };
+    const resend = { emails: { send: vi.fn().mockResolvedValue({ data: { id: 'email-1' }, error: null }) } };
 
     const result = await sendDigest(supabase, resend as any, 'profile-1', 'me@example.com');
 
@@ -26,7 +30,11 @@ describe('sendDigest', () => {
   it('retries once, then leaves recommendations queued (no log entry) on repeated send failure', async () => {
     const insert = vi.fn();
     const supabase = { from: vi.fn().mockReturnValue({ insert }) } as any;
-    const resend = { emails: { send: vi.fn().mockRejectedValue(new Error('send failed')) } };
+    const resend = {
+      emails: {
+        send: vi.fn().mockResolvedValue({ data: null, error: { message: 'send failed', name: 'application_error' } }),
+      },
+    };
 
     const result = await sendDigest(supabase, resend as any, 'profile-1', 'me@example.com');
 

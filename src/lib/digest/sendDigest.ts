@@ -22,12 +22,15 @@ export async function sendDigest(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      await resend.emails.send({
-        from: 'Tech Relevance Advisor <digest@example.com>',
+      const { error } = await resend.emails.send({
+        from: process.env.DIGEST_FROM_EMAIL!,
         to: toEmail,
         subject,
         html,
       });
+      if (error) {
+        throw new Error(error.message);
+      }
       sent = true;
       break;
     } catch (error) {
