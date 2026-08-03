@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServiceSupabaseClient } from '@/lib/supabase/server';
 import { runPipeline } from '@/lib/pipeline/runPipeline';
+import { fetchAllTrending } from '@/lib/sources';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -19,11 +20,14 @@ export async function GET(request: Request) {
   const claudeClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   const voyageApiKey = process.env.VOYAGE_API_KEY!;
 
+  // Fetched once per run and shared across every profile, rather than re-fetched per profile.
+  const ingestionResult = await fetchAllTrending();
+
   const results = [];
   for (const row of profileRows ?? []) {
     const profile = { id: row.id, stackTags: row.stack_tags, goalTags: row.goal_tags };
     try {
-      const result = await runPipeline(supabase, profile, claudeClient, voyageApiKey);
+      const result = await runPipeline(supabase, profile, claudeClient, voyageApiKey, ingestionResult);
       results.push({ profileId: profile.id, ...result });
     } catch (error) {
       console.error(`runPipeline failed for profile ${profile.id}:`, error);

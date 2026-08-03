@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type Anthropic from '@anthropic-ai/sdk';
-import { fetchAllTrending } from '../sources';
+import type { IngestionResult } from '../sources';
 import { prefilterItems } from '../prefilter/prefilter';
 import { enrichCandidate } from '../enrichment/enrich';
 import { upsertRecommendation } from '../db/recommendations';
@@ -15,9 +15,10 @@ export async function runPipeline(
   supabase: SupabaseClient,
   profile: Profile,
   claudeClient: Pick<Anthropic, 'messages'>,
-  voyageApiKey: string
+  voyageApiKey: string,
+  ingestionResult: IngestionResult
 ): Promise<PipelineResult> {
-  const { items, failedSources } = await fetchAllTrending();
+  const { items, failedSources } = ingestionResult;
 
   if (items.length === 0) {
     return { processedCount: 0, failedSources };
