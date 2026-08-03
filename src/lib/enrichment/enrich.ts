@@ -56,9 +56,10 @@ export async function enrichCandidate(
     try {
       const response = await client.messages.create({
         model: 'claude-sonnet-5',
-        max_tokens: 300,
+        max_tokens: 2000,
+        thinking: { type: 'disabled' },
         messages: [{ role: 'user', content: prompt }],
-      } as Parameters<Anthropic['messages']['create']>[0]);
+      } as Parameters<Anthropic['messages']['create']>[0] & { thinking?: { type: 'disabled' } });
 
       const textBlock = (response as any).content.find((block: any) => block.type === 'text');
       if (!textBlock) {
