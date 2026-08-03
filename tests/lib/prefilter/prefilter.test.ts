@@ -40,8 +40,9 @@ const items: TrendItem[] = [
 
 describe('prefilterItems', () => {
   it('categorizes and ranks items by combined tag-overlap and embedding score', async () => {
-    const candidates = await prefilterItems(items, profile, 'fake-key');
+    const { candidates, embeddingsAvailable } = await prefilterItems(items, profile, 'fake-key');
 
+    expect(embeddingsAvailable).toBe(true);
     expect(candidates).toHaveLength(2);
     expect(candidates.find((c) => c.url === 'https://a.com')?.category).toBe('maintain');
     expect(candidates.find((c) => c.url === 'https://b.com')?.category).toBe('grow');
@@ -60,8 +61,47 @@ describe('prefilterItems', () => {
       ...Array.from({ length: 30 }, () => [1, 0]),
     ]);
 
-    const candidates = await prefilterItems(manyItems, profile, 'fake-key');
+    const { candidates } = await prefilterItems(manyItems, profile, 'fake-key');
     expect(candidates.length).toBeLessThanOrEqual(20);
+  });
+
+  it('chunks embedTexts calls when item count exceeds the chunk size, preserving order', async () => {
+    const manyItems = Array.from({ length: 130 }, (_, i) => ({
+      ...items[0],
+      url: `https://chunk-item-${i}.com`,
+      // Alternate tags so we can verify per-item embeddings line up by index
+      // rather than all collapsing to the same score.
+      tags: i % 2 === 0 ? ['typescript'] : ['ai/ml'],
+    }));
+
+    const { embedTexts } = await import('@/lib/prefilter/embeddingSimilarity');
+    const mockedEmbedTexts = vi.mocked(embedTexts);
+    mockedEmbedTexts.mockClear();
+
+    // First call carries stackText + goalText + first 100 item texts.
+    mockedEmbedTexts.mockImplementationOnce(async (texts) => {
+      expect(texts.length).toBe(2 + 100);
+      return [
+        [1, 0], // stack embedding
+        [0, 1], // goal embedding
+        ...Array.from({ length: 100 }, (_, i) => (i % 2 === 0 ? [1, 0] : [0, 1])),
+      ];
+    });
+    // Second call carries only the remaining 30 item texts.
+    mockedEmbedTexts.mockImplementationOnce(async (texts) => {
+      expect(texts.length).toBe(30);
+      return Array.from({ length: 30 }, (_, i) => (i % 2 === 0 ? [1, 0] : [0, 1]));
+    });
+
+    const { candidates, embeddingsAvailable } = await prefilterItems(manyItems, profile, 'fake-key');
+
+    expect(mockedEmbedTexts).toHaveBeenCalledTimes(2);
+    expect(embeddingsAvailable).toBe(true);
+    // All 130 items score >= MIN_MATCH_SCORE via tag overlap alone, but only
+    // the top 20 survive CANDIDATE_LIMIT — the point of this test is that no
+    // item embedding was dropped or misaligned across the chunk boundary.
+    expect(candidates.length).toBe(20);
+    expect(candidates.every((c) => c.category === 'maintain' || c.category === 'grow')).toBe(true);
   });
 
   it('does not let an empty goalTags profile produce a false grow signal', async () => {
@@ -90,7 +130,7 @@ describe('prefilterItems', () => {
     // If the empty-goalTags guard were removed, growSimilarity would be computed
     // against the goal embedding (which the item embedding intentionally matches),
     // producing a growTotal that beats maintainTotal and misclassifying this as 'grow'.
-    const candidates = await prefilterItems([item], noGoalsProfile, 'fake-key');
+    const { candidates } = await prefilterItems([item], noGoalsProfile, 'fake-key');
 
     expect(candidates).toHaveLength(1);
     expect(candidates[0].category).toBe('maintain');
@@ -113,7 +153,7 @@ describe('prefilterItems', () => {
       fetchedAt: 'now',
     };
 
-    const candidates = await prefilterItems([irrelevantItem], profile, 'fake-key');
+    const { candidates } = await prefilterItems([irrelevantItem], profile, 'fake-key');
 
     expect(candidates).toHaveLength(0);
   });
@@ -126,12 +166,13 @@ describe('prefilterItems', () => {
 
     // items[0] has tags: ['typescript'], which matches profile.stackTags' 'typescript' (weight 1),
     // so its tag-overlap-only maintainScore (1) clears MIN_MATCH_SCORE (0.3) on its own.
-    const candidates = await prefilterItems([items[0]], profile, 'fake-key');
+    const { candidates, embeddingsAvailable } = await prefilterItems([items[0]], profile, 'fake-key');
 
     expect(candidates).toHaveLength(1);
     expect(candidates[0].category).toBe('maintain');
     expect(candidates[0].matchScore).toBeCloseTo(1);
     expect(consoleErrorSpy).toHaveBeenCalled();
+    expect(embeddingsAvailable).toBe(false);
 
     consoleErrorSpy.mockRestore();
   });
