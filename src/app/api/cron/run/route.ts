@@ -4,6 +4,8 @@ import { createServiceSupabaseClient } from '@/lib/supabase/server';
 import { runPipeline } from '@/lib/pipeline/runPipeline';
 import { fetchAllTrending } from '@/lib/sources';
 
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

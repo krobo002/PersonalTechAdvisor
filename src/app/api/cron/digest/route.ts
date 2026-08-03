@@ -3,6 +3,8 @@ import { Resend } from 'resend';
 import { createServiceSupabaseClient } from '@/lib/supabase/server';
 import { sendDigest } from '@/lib/digest/sendDigest';
 
+export const maxDuration = 300;
+
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
