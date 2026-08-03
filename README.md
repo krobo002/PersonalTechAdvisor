@@ -46,13 +46,21 @@ for the implementation plan.
 
 3. **Enable GitHub sign-in in Supabase**
 
-   In your Supabase project: **Authentication → Providers → GitHub**, enable
-   it, and fill in the Client ID/Secret from a GitHub OAuth App whose
-   **Authorization callback URL** is:
+   In your Supabase project: **Authentication → Providers → GitHub**, toggle
+   it on. Supabase displays a **Callback URL (for OAuth)** field —
+   something like:
 
    ```
-   <your-app-url>/api/auth/callback
+   https://<your-project-ref>.supabase.co/auth/v1/callback
    ```
+
+   Create a [GitHub OAuth App](https://github.com/settings/applications/new)
+   with that exact URL as its **Authorization callback URL** (this is
+   Supabase's own callback, not your app's — your app's
+   `/api/auth/callback` route only receives control afterward, via the
+   `redirectTo` option already wired into the sign-in call in the code).
+   Copy the OAuth App's **Client ID** and a generated **Client Secret** back
+   into the Supabase GitHub provider fields, then save.
 
 4. **Configure environment variables**
 
