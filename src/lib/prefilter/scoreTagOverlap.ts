@@ -6,6 +6,10 @@ export interface OverlapScore {
   growScore: number;
 }
 
+function tokenize(tag: string): string[] {
+  return tag.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 0);
+}
+
 export function scoreTagOverlap(item: TrendItem, stackTags: StackTag[], goalTags: GoalTag[]): OverlapScore {
   const itemTags = new Set(item.tags.map((tag) => tag.toLowerCase()));
 
@@ -14,10 +18,11 @@ export function scoreTagOverlap(item: TrendItem, stackTags: StackTag[], goalTags
     0
   );
 
-  const growScore = goalTags.reduce(
-    (total, goalTag) => (itemTags.has(goalTag.tag.toLowerCase()) ? total + 1 : total),
-    0
-  );
+  const growScore = goalTags.reduce((total, goalTag) => {
+    const tokens = tokenize(goalTag.tag);
+    const hasOverlap = tokens.some((token) => itemTags.has(token));
+    return hasOverlap ? total + 1 : total;
+  }, 0);
 
   return { maintainScore, growScore };
 }

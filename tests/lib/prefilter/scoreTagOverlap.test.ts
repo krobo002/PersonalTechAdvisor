@@ -38,4 +38,32 @@ describe('scoreTagOverlap', () => {
     expect(result.maintainScore).toBeCloseTo(1.4);
     expect(result.growScore).toBe(1);
   });
+
+  it('matches a multi-word goal tag against an item tag that is one of its constituent words', () => {
+    const result = scoreTagOverlap(
+      item,
+      [],
+      [{ tag: 'ai/ml' }]
+    );
+
+    // item.tags is ['react', 'server', 'components'] — no constituent word of 'ai/ml' overlaps.
+    expect(result.growScore).toBe(0);
+
+    const overlapping = scoreTagOverlap(
+      { ...item, tags: ['ai'] },
+      [],
+      [{ tag: 'ai/ml' }]
+    );
+
+    // 'ai/ml' tokenizes to ['ai', 'ml']; the item has 'ai' as a standalone tag, so it should match.
+    expect(overlapping.growScore).toBe(1);
+
+    const unrelated = scoreTagOverlap(
+      { ...item, tags: ['python'] },
+      [],
+      [{ tag: 'ai/ml' }]
+    );
+
+    expect(unrelated.growScore).toBe(0);
+  });
 });
