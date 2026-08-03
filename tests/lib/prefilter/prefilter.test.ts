@@ -117,4 +117,22 @@ describe('prefilterItems', () => {
 
     expect(candidates).toHaveLength(0);
   });
+
+  it('falls back to tag-overlap-only scoring when the embedding API fails', async () => {
+    const { embedTexts } = await import('@/lib/prefilter/embeddingSimilarity');
+    vi.mocked(embedTexts).mockRejectedValueOnce(new Error('Voyage API unavailable'));
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    // items[0] has tags: ['typescript'], which matches profile.stackTags' 'typescript' (weight 1),
+    // so its tag-overlap-only maintainScore (1) clears MIN_MATCH_SCORE (0.3) on its own.
+    const candidates = await prefilterItems([items[0]], profile, 'fake-key');
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].category).toBe('maintain');
+    expect(candidates[0].matchScore).toBeCloseTo(1);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
+  });
 });

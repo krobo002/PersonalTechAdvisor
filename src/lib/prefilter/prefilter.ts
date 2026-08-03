@@ -17,14 +17,24 @@ export async function prefilterItems(
   const goalText = profile.goalTags.map((t) => t.tag).join(', ') || 'no goal tags';
   const itemTexts = items.map((item) => `${item.title} ${item.tags.join(' ')}`);
 
-  const embeddings = await embedTexts([stackText, goalText, ...itemTexts], voyageApiKey);
-  const [stackEmbedding, goalEmbedding, ...itemEmbeddings] = embeddings;
+  let stackEmbedding: number[] | null = null;
+  let goalEmbedding: number[] | null = null;
+  let itemEmbeddings: number[][] = [];
+
+  try {
+    const embeddings = await embedTexts([stackText, goalText, ...itemTexts], voyageApiKey);
+    [stackEmbedding, goalEmbedding, ...itemEmbeddings] = embeddings;
+  } catch (error) {
+    console.error('Embedding similarity unavailable, falling back to tag-overlap-only scoring:', error);
+  }
 
   const scored: Candidate[] = items.map((item, index) => {
     const overlap = scoreTagOverlap(item, profile.stackTags, profile.goalTags);
-    const itemEmbedding = itemEmbeddings[index];
-    const maintainSimilarity = cosineSimilarity(itemEmbedding, stackEmbedding);
-    const growSimilarity = profile.goalTags.length > 0 ? cosineSimilarity(itemEmbedding, goalEmbedding) : 0;
+    const maintainSimilarity = stackEmbedding ? cosineSimilarity(itemEmbeddings[index], stackEmbedding) : 0;
+    const growSimilarity =
+      stackEmbedding && goalEmbedding && profile.goalTags.length > 0
+        ? cosineSimilarity(itemEmbeddings[index], goalEmbedding)
+        : 0;
 
     const maintainTotal = overlap.maintainScore + EMBEDDING_WEIGHT * maintainSimilarity;
     const growTotal = overlap.growScore + EMBEDDING_WEIGHT * growSimilarity;
