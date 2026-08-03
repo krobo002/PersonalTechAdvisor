@@ -36,7 +36,7 @@ describe('runPipeline', () => {
     const { upsertRecommendation } = await import('@/lib/db/recommendations');
 
     const item = {
-      source: 'hacker-news',
+      source: 'hacker-news' as const,
       title: 't',
       url: 'u',
       tags: [],
