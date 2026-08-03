@@ -6,6 +6,7 @@ import { embedTexts, cosineSimilarity } from './embeddingSimilarity';
 
 const CANDIDATE_LIMIT = 20;
 const EMBEDDING_WEIGHT = 0.5;
+const MIN_MATCH_SCORE = 0.3;
 
 export async function prefilterItems(
   items: TrendItem[],
@@ -33,5 +34,7 @@ export async function prefilterItems(
     return { ...item, matchScore: Math.max(maintainTotal, growTotal), category };
   });
 
-  return scored.sort((a, b) => b.matchScore - a.matchScore).slice(0, CANDIDATE_LIMIT);
+  const relevant = scored.filter((candidate) => candidate.matchScore >= MIN_MATCH_SCORE);
+
+  return relevant.sort((a, b) => b.matchScore - a.matchScore).slice(0, CANDIDATE_LIMIT);
 }

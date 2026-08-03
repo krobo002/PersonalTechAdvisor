@@ -95,4 +95,26 @@ describe('prefilterItems', () => {
     expect(candidates).toHaveLength(1);
     expect(candidates[0].category).toBe('maintain');
   });
+
+  it('excludes items with no tag overlap and near-zero embedding similarity', async () => {
+    const { embedTexts } = await import('@/lib/prefilter/embeddingSimilarity');
+    vi.mocked(embedTexts).mockResolvedValueOnce([
+      [1, 0], // stack embedding
+      [0, 1], // goal embedding
+      [0, 0], // item embedding — orthogonal to both stack and goal embeddings
+    ]);
+
+    const irrelevantItem: TrendItem = {
+      source: 'hacker-news',
+      title: 'Completely unrelated news',
+      url: 'https://d.com',
+      tags: ['unrelated-tag'],
+      rawSignal: 10,
+      fetchedAt: 'now',
+    };
+
+    const candidates = await prefilterItems([irrelevantItem], profile, 'fake-key');
+
+    expect(candidates).toHaveLength(0);
+  });
 });
