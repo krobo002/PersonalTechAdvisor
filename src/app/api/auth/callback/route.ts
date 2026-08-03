@@ -48,5 +48,19 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(new URL('/dashboard', request.url));
+  const { data: profileRow, error: selectError } = await supabase
+    .from('profiles')
+    .select('goal_tags')
+    .eq('id', user.id)
+    .single();
+
+  if (selectError) {
+    console.error('Failed to read back profile goal_tags:', selectError);
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  const goalTags = (profileRow?.goal_tags as unknown[]) ?? [];
+  const destination = goalTags.length === 0 ? '/setup' : '/dashboard';
+
+  return NextResponse.redirect(new URL(destination, request.url));
 }
